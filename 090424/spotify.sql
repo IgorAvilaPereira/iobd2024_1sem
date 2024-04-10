@@ -228,9 +228,44 @@ SELECT artista.id, artista.nome from artista left join album on (artista.id = al
 -- Liste usuários que ainda não possuem playlists cadastradas
 SELECT * FROM externo.usuario where id not in (select usuario_id from externo.playlist);
 
+-- Retorne a quantidade de álbuns por artista
+select artista.id, artista.nome, count(*) as qtde from artista inner join album on (artista.id = album.artista_id) group by artista.id order by artista.id;
+
+-- Retorne a quantidade de músicas por artista
+select artista.id, artista.nome, count(*) as qtde from artista inner join album on (artista.id = album.artista_id) inner join musica on (album.id = musica.album_id) group by artista.id, album.id order by artista.id;
 
 
+-- Retorne o título das músicas de uma playlist de um determinado usuário
+
+SELECT playlist.id, playlist.nome, STRING_AGG(musica.titulo, ',') from externo.usuario inner join externo.playlist on (externo.usuario.id = externo.playlist.usuario_id) inner join playlist_musica on (externo.playlist.id = playlist_musica.playlist_id) inner join musica on (musica.id = playlist_musica.musica_id) group by playlist.id;
 
 
+-- Retorne a quantidade de playlist de um determinado usuário
+SELECT externo.usuario.id, externo.usuario.nome, count(*) from externo.usuario inner join externo.playlist on (externo.usuario.id = externo.playlist.usuario_id) group by externo.usuario.id order by externo.usuario.id;
 
+-- Retone a quantidade de músicas por artista (de artistas que possuem pelo menos 2 músicas)
+select artista.id, artista.nome, count(*) from artista inner join album on (artista.id = album.artista_id) inner join musica on (album.id = musica.album_id) group by artista.id, artista.nome having count(*) >= 2;
+
+-- Retorne os títulos de todos os álbuns lançados no mesmo ano em que o álbum mais antigo foi lançado
+select * from album where extract(year from data_lancamento) = (SELECT extract(year from MIN(data_lancamento)) from album);
+
+-- Retorne os títulos de todos os álbuns lançados no mesmo ano em que o álbum mais novo foi lançado
+select * from album where extract(year from data_lancamento) = (SELECT extract(year from max(data_lancamento)) from album);
+
+
+-- Retorne na mesma consulta os nomes de todos os artistas e de todos os usuários. Caso um determinado artista não tenha cadastrado seu nome, retorne seu nome artístico
+
+SELECT coalesce(artista.nome_artistico, artista.nome) from artista
+UNION
+SELECT externo.usuario.nome from externo.usuario;
+
+-- Retorne nomes das playlists com e sem músicas
+select * from externo.playlist;
+
+-- Retorne a média da quantidade de músicas de todas as playlists
+-- by Annie feat. Igor
+SELECT cast(cast((SELECT count(DISTINCT musica_id) from playlist_musica) as numeric(8,2))/cast((SELECT count(*) from externo.playlist) as numeric(8,2)) as numeric(8,2)) AS resultado;
+
+-- Retorne somente playlists que possuem quantidade de músicas maior ou igual a média
+SELECT externo.playlist.id, externo.playlist.nome, count(*) FROM externo.playlist inner join playlist_musica on (externo.playlist.id = playlist_musica.playlist_id) group by externo.playlist.id having count(*) >= (SELECT cast(cast((SELECT count(DISTINCT musica_id) from playlist_musica) as numeric(8,2))/cast((SELECT count(*) from externo.playlist) as numeric(8,2)) as numeric(8,2)));
 
